@@ -4,6 +4,8 @@ import { PassportModule } from '@nestjs/passport'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { AuthController } from './auth.controller'
 import { AuthService } from './auth.service'
+import { AdminAuthController } from './admin-auth.controller'
+import { AdminAuthService } from './admin-auth.service'
 import { JwtStrategy } from './strategies/jwt.strategy'
 import jwtConfig from '../../config/jwt.config'
 import wechatConfig from '../../config/wechat.config'
@@ -22,8 +24,8 @@ import wechatConfig from '../../config/wechat.config'
       }),
     }),
   ],
-  controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  controllers: [AuthController, AdminAuthController],
+  providers: [AuthService, AdminAuthService, JwtStrategy],
   exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

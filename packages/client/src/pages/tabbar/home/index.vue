@@ -34,7 +34,7 @@ function goToReview(slug: string) {
 }
 
 function goToCategory(slug: string) {
-  uni.navigateTo({ url: `/pages/subpkg-news/category?slug=${slug}` })
+  uni.switchTab({ url: '/pages/tabbar/review/index' })
 }
 
 function goToArticle(id: string) {

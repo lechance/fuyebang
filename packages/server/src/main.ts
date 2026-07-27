@@ -1,12 +1,27 @@
-import { NestFactory } from '@nestjs/core'
+import { NestFactory, Reflector } from '@nestjs/core'
 import { ValidationPipe } from '@nestjs/common'
 import { AppModule } from './app.module'
+import { JwtAuthGuard } from './common/guards/jwt-auth.guard'
+import { RolesGuard } from './common/guards/roles.guard'
+import { TransformInterceptor } from './common/interceptors/transform.interceptor'
+import { AllExceptionsFilter } from './common/filters/http-exception.filter'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
+  const reflector = app.get(Reflector)
 
   // Global prefix
   app.setGlobalPrefix('v1', { exclude: ['health'] })
+
+  // Global guards
+  app.useGlobalGuards(new JwtAuthGuard(reflector))
+  app.useGlobalGuards(new RolesGuard(reflector))
+
+  // Global interceptors
+  app.useGlobalInterceptors(new TransformInterceptor())
+
+  // Global filters
+  app.useGlobalFilters(new AllExceptionsFilter())
 
   // Global pipes
   app.useGlobalPipes(

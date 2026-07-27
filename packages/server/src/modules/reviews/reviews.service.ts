@@ -167,4 +167,71 @@ export class ReviewsService {
     if (!existing) throw new NotFoundException('评测不存在')
     return this.prisma.review.delete({ where: { id } })
   }
+
+  // Admin methods
+  async adminList(query: any) {
+    const where: any = {}
+    if (query.status) where.status = query.status
+    if (query.keyword) where.title = { contains: query.keyword, mode: 'insensitive' }
+    const page = query.page || 1
+    const ps = query.pageSize || 20
+    const [data, total] = await Promise.all([
+      this.prisma.review.findMany({
+        where,
+        orderBy: { updatedAt: 'desc' },
+        skip: (page - 1) * ps,
+        take: ps,
+        select: {
+          id: true, title: true, slug: true, scoreOverall: true,
+          viewCount: true, reviewCount: true, status: true,
+          isFeatured: true, createdAt: true, updatedAt: true,
+        },
+      }),
+      this.prisma.review.count({ where }),
+    ])
+    return { data, meta: { page, pageSize: ps, total, totalPages: Math.ceil(total / ps) } }
+  }
+
+  async getById(id: string) {
+    const review = await this.prisma.review.findUnique({
+      where: { id },
+      include: {
+        steps: { orderBy: { stepNumber: 'asc' } },
+        categories: { include: { category: true } },
+        tags: { include: { tag: true } },
+      },
+    })
+    if (!review) throw new NotFoundException('评测不存在')
+    return review
+  }
+
+  async updateStatus(id: string, status: string) {
+    const existing = await this.prisma.review.findUnique({ where: { id } })
+    if (!existing) throw new NotFoundException('评测不存在')
+    return this.prisma.review.update({
+      where: { id },
+      data: {
+        status: status as any,
+        publishedAt: status === 'PUBLISHED' ? new Date() : existing.publishedAt,
+      },
+    })
+  }
+
+  // Step management
+  async createSteps(reviewId: string, steps: { stepNumber: number; title: string; content: string; imageUrl?: string }[]) {
+    await this.prisma.reviewStep.deleteMany({ where: { reviewId } })
+    if (steps.length > 0) {
+      return this.prisma.reviewStep.createMany({
+        data: steps.map(s => ({ ...s, reviewId })),
+      })
+    }
+    return { count: 0 }
+  }
+
+  async getStepsByReviewId(reviewId: string) {
+    return this.prisma.reviewStep.findMany({
+      where: { reviewId },
+      orderBy: { stepNumber: 'asc' },
+    })
+  }
 }

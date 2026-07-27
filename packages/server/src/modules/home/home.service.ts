@@ -8,7 +8,11 @@ export class HomeService {
   async getHomeFeed(page = 1, pageSize = 20) {
     const [banners, categories, recommended, latestNews, scamAlerts] = await Promise.all([
       this.getBanners('HOME_TOP'),
-      this.prisma.category.findMany({ where: { parentId: null, isActive: true }, orderBy: { sortOrder: 'asc' } }),
+      this.prisma.category.findMany({
+        where: { parentId: null, isActive: true },
+        orderBy: { sortOrder: 'asc' },
+        include: { children: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } } },
+      }),
       this.getRecommended(6),
       this.getNewsFeed(1, 10),
       this.prisma.scamReport.findMany({
