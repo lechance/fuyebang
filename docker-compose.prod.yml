@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: fuyebang
+      POSTGRES_USER: fuyebang
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-fuyebang123}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - fuyebang-net
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redis123}
+    volumes:
+      - redis-data:/data
+    restart: always
+    networks:
+      - fuyebang-net
+
+  server:
+    build:
+      context: .
+      dockerfile: packages/server/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://fuyebang:${DB_PASSWORD:-fuyebang123}@postgres:5432/fuyebang?schema=public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: 7d
+      WECHAT_APPID: ${WECHAT_APPID}
+      WECHAT_SECRET: ${WECHAT_SECRET}
+    depends_on:
+      - postgres
+      - redis
+    restart: always
+    networks:
+      - fuyebang-net
+
+  admin:
+    build:
+      context: .
+      dockerfile: packages/admin/Dockerfile
+    environment:
+      VITE_API_BASE_URL: https://api.fuyebang.com
+    restart: always
+    networks:
+      - fuyebang-net
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - server
+      - admin
+    restart: always
+    networks:
+      - fuyebang-net
+
+volumes:
+  pgdata:
+  redis-data:
+
+networks:
+  fuyebang-net:
+    driver: bridge

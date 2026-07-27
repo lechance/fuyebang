@@ -93,6 +93,11 @@ onMounted(async () => {
         <text class="row-label">意见反馈</text>
         <text class="arrow">›</text>
       </view>
+      <view class="menu-row" @tap="goTo('/pages/subpkg-user/settings')">
+        <text class="row-icon">⚙️</text>
+        <text class="row-label">设置</text>
+        <text class="arrow">›</text>
+      </view>
     </view>
   </view>
 </template>

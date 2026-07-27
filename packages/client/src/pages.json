@@ -60,7 +60,10 @@
         { "path": "history", "style": { "navigationBarTitleText": "浏览记录" } },
         { "path": "my-posts", "style": { "navigationBarTitleText": "我的发布" } },
         { "path": "notifications", "style": { "navigationBarTitleText": "消息通知" } },
-        { "path": "feedback", "style": { "navigationBarTitleText": "意见反馈" } }
+        { "path": "feedback", "style": { "navigationBarTitleText": "意见反馈" } },
+        { "path": "settings", "style": { "navigationBarTitleText": "设置" } },
+        { "path": "privacy", "style": { "navigationBarTitleText": "隐私政策" } },
+        { "path": "terms", "style": { "navigationBarTitleText": "用户协议" } }
       ]
     }
   ],

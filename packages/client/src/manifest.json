@@ -16,7 +16,12 @@
     "usingComponents": true,
     "optimization": {
       "subPackages": true
-    }
+    },
+    "privacy": {
+      "enable": true,
+      "prompt": "为正常使用副业邦服务，我们需要收集您的微信昵称、头像信息用于账号识别。详细请查看隐私政策。"
+    },
+    "requiredPrivateInfos": []
   },
   "uniStatistics": {
     "enable": false
