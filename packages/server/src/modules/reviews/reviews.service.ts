@@ -1,0 +1,170 @@
+import { Injectable, NotFoundException } from '@nestjs/common'
+import { PrismaService } from '../../prisma/prisma.service'
+import { QueryReviewDto } from './dto/query-review.dto'
+import { CreateReviewDto } from './dto/create-review.dto'
+import { UpdateReviewDto } from './dto/update-review.dto'
+import { paginate } from '../../common/dto/pagination.dto'
+import { calculateOverall } from '@fuyebang/shared'
+import { Prisma } from '@prisma/client'
+
+@Injectable()
+export class ReviewsService {
+  constructor(private prisma: PrismaService) {}
+
+  async list(query: QueryReviewDto) {
+    const where: Prisma.ReviewWhereInput = {
+      status: 'PUBLISHED',
+    }
+
+    if (query.keyword) {
+      where.OR = [
+        { title: { contains: query.keyword, mode: 'insensitive' } },
+        { summary: { contains: query.keyword, mode: 'insensitive' } },
+      ]
+    }
+    if (query.minScore) where.scoreOverall = { ...(where.scoreOverall as any), gte: query.minScore }
+    if (query.maxScore) where.scoreOverall = { ...(where.scoreOverall as any), lte: query.maxScore }
+    if (query.difficulty) where.difficulty = query.difficulty
+
+    const orderBy: Prisma.ReviewOrderByWithRelationInput = {}
+    switch (query.sortBy) {
+      case 'earnings': orderBy.scoreEarnings = query.sortOrder || 'desc'; break
+      case 'newest': orderBy.publishedAt = 'desc'; break
+      case 'views': orderBy.viewCount = 'desc'; break
+      case 'difficulty': orderBy.scoreDifficulty = query.sortOrder || 'asc'; break
+      default: orderBy.scoreOverall = 'desc'
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.review.findMany({
+        where,
+        orderBy,
+        skip: query.skip,
+        take: query.pageSize,
+        select: {
+          id: true, title: true, summary: true, coverImage: true, slug: true,
+          scoreOverall: true, scoreEarnings: true, scoreRisk: true, scoreDifficulty: true,
+          incomeMin: true, incomeMax: true, difficulty: true, startupCost: true,
+          isFeatured: true, viewCount: true, favoriteCount: true, reviewCount: true,
+          publishedAt: true,
+          categories: { include: { category: { select: { id: true, name: true, slug: true } } } },
+        },
+      }),
+      this.prisma.review.count({ where }),
+    ])
+
+    return paginate(data, total, query)
+  }
+
+  async getBySlug(slug: string) {
+    const review = await this.prisma.review.findUnique({
+      where: { slug },
+      include: {
+        steps: { orderBy: { stepNumber: 'asc' } },
+        categories: { include: { category: true } },
+        tags: { include: { tag: true } },
+        sideHustle: { select: { id: true, name: true, slug: true } },
+      },
+    })
+    if (!review) throw new NotFoundException('评测不存在')
+
+    // Increment view count (fire and forget)
+    this.prisma.review.update({
+      where: { id: review.id },
+      data: { viewCount: { increment: 1 } },
+    }).catch(() => {})
+
+    return review
+  }
+
+  async getSteps(slug: string) {
+    const review = await this.prisma.review.findUnique({
+      where: { slug },
+      select: { id: true },
+    })
+    if (!review) throw new NotFoundException('评测不存在')
+
+    return this.prisma.reviewStep.findMany({
+      where: { reviewId: review.id },
+      orderBy: { stepNumber: 'asc' },
+    })
+  }
+
+  async ranking(dimension: string, limit = 20) {
+    const orderBy: Prisma.ReviewOrderByWithRelationInput = {}
+    const dimensionMap: Record<string, string> = {
+      overall: 'scoreOverall', earnings: 'scoreEarnings', risk: 'scoreRisk',
+      stability: 'scoreMarketStability', difficulty: 'scoreDifficulty', compliance: 'scoreCompliance',
+    }
+    const field = dimensionMap[dimension] || 'scoreOverall'
+    orderBy[field] = 'desc'
+
+    return this.prisma.review.findMany({
+      where: { status: 'PUBLISHED' },
+      orderBy,
+      take: limit,
+      select: {
+        id: true, title: true, slug: true, scoreOverall: true,
+        [dimensionMap[dimension] || 'scoreOverall']: true,
+        viewCount: true, reviewCount: true, coverImage: true,
+      },
+    })
+  }
+
+  async featured(page = 1, pageSize = 10) {
+    const skip = (page - 1) * pageSize
+    const [data, total] = await Promise.all([
+      this.prisma.review.findMany({
+        where: { status: 'PUBLISHED', isFeatured: true },
+        orderBy: { publishedAt: 'desc' },
+        skip,
+        take: pageSize,
+        select: {
+          id: true, title: true, summary: true, coverImage: true, slug: true,
+          scoreOverall: true, scoreEarnings: true, scoreRisk: true, scoreDifficulty: true,
+          incomeMin: true, incomeMax: true, difficulty: true, startupCost: true,
+          isFeatured: true, viewCount: true, favoriteCount: true, reviewCount: true,
+          publishedAt: true,
+        },
+      }),
+      this.prisma.review.count({ where: { status: 'PUBLISHED', isFeatured: true } }),
+    ])
+    return paginate(data, total, { page, pageSize, skip } as any)
+  }
+
+  async create(userId: string, dto: CreateReviewDto) {
+    const scoreOverall = calculateOverall(dto)
+    return this.prisma.review.create({
+      data: {
+        ...dto,
+        scoreOverall,
+        authorId: userId,
+      },
+    })
+  }
+
+  async update(id: string, dto: UpdateReviewDto) {
+    const existing = await this.prisma.review.findUnique({ where: { id } })
+    if (!existing) throw new NotFoundException('评测不存在')
+
+    const data: any = { ...dto }
+    if (dto.scoreEarnings || dto.scoreRisk || dto.scoreMarketStability || dto.scoreDifficulty || dto.scoreCompliance) {
+      const scores = {
+        earnings: dto.scoreEarnings ?? Number(existing.scoreEarnings),
+        risk: dto.scoreRisk ?? Number(existing.scoreRisk),
+        marketStability: dto.scoreMarketStability ?? Number(existing.scoreMarketStability),
+        difficulty: dto.scoreDifficulty ?? Number(existing.scoreDifficulty),
+        compliance: dto.scoreCompliance ?? Number(existing.scoreCompliance),
+      }
+      data.scoreOverall = calculateOverall(scores as any)
+    }
+
+    return this.prisma.review.update({ where: { id }, data })
+  }
+
+  async delete(id: string) {
+    const existing = await this.prisma.review.findUnique({ where: { id } })
+    if (!existing) throw new NotFoundException('评测不存在')
+    return this.prisma.review.delete({ where: { id } })
+  }
+}

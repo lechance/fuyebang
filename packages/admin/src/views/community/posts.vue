@@ -1,0 +1,1 @@
+<template><div><h2>社区管理</h2><el-table :data="[]" stripe><el-table-column prop="title" label="帖子标题" /><el-table-column prop="author" label="作者" /><el-table-column prop="status" label="状态" /></el-table></div></template>

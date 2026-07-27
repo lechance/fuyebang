@@ -1,0 +1,1 @@
+<template><div><h2>横幅管理</h2><el-table :data="[]" stripe><el-table-column prop="title" label="标题" /><el-table-column prop="position" label="位置" /><el-table-column prop="isActive" label="启用" /></el-table></div></template>

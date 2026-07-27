@@ -1,0 +1,1 @@
+<template><div><h2>用户管理</h2><el-table :data="[]" stripe><el-table-column prop="nickname" label="昵称" /><el-table-column prop="role" label="角色" /><el-table-column prop="status" label="状态" /><el-table-column prop="createdAt" label="注册时间" /></el-table></div></template>

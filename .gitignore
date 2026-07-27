@@ -1,0 +1,28 @@
+node_modules/
+dist/
+.output/
+.turbo/
+coverage/
+
+# env
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# WeChat Dev
+packages/client/unpackage/
+packages/client/dist/
+
+# Logs
+*.log
+npm-debug.log*

@@ -1,0 +1,85 @@
+{
+  "pages": [
+    { "path": "pages/tabbar/home/index", "style": { "navigationBarTitleText": "副业邦" } },
+    { "path": "pages/tabbar/review/index", "style": { "navigationBarTitleText": "评测中心" } },
+    { "path": "pages/tabbar/news/index", "style": { "navigationBarTitleText": "行业资讯" } },
+    { "path": "pages/tabbar/community/index", "style": { "navigationBarTitleText": "社区" } },
+    { "path": "pages/tabbar/profile/index", "style": { "navigationBarTitleText": "我的" } }
+  ],
+  "subPackages": [
+    {
+      "root": "pages/subpkg-review",
+      "pages": [
+        { "path": "detail", "style": { "navigationBarTitleText": "评测详情" } },
+        { "path": "compare", "style": { "navigationBarTitleText": "对比评测" } },
+        { "path": "ranking", "style": { "navigationBarTitleText": "评测榜单" } }
+      ]
+    },
+    {
+      "root": "pages/subpkg-news",
+      "pages": [
+        { "path": "article-detail", "style": { "navigationBarTitleText": "文章详情" } },
+        { "path": "category", "style": { "navigationBarTitleText": "分类" } }
+      ]
+    },
+    {
+      "root": "pages/subpkg-hustle",
+      "pages": [
+        { "path": "list", "style": { "navigationBarTitleText": "副业大全" } },
+        { "path": "detail", "style": { "navigationBarTitleText": "副业详情" } }
+      ]
+    },
+    {
+      "root": "pages/subpkg-guide",
+      "pages": [
+        { "path": "list", "style": { "navigationBarTitleText": "创业指南" } },
+        { "path": "detail", "style": { "navigationBarTitleText": "指南详情" } },
+        { "path": "tools", "style": { "navigationBarTitleText": "工具推荐" } }
+      ]
+    },
+    {
+      "root": "pages/subpkg-scam",
+      "pages": [
+        { "path": "list", "style": { "navigationBarTitleText": "避坑专区" } },
+        { "path": "detail", "style": { "navigationBarTitleText": "骗局详情" } },
+        { "path": "report", "style": { "navigationBarTitleText": "提交举报" } }
+      ]
+    },
+    {
+      "root": "pages/subpkg-community",
+      "pages": [
+        { "path": "post-detail", "style": { "navigationBarTitleText": "帖子详情" } },
+        { "path": "create-post", "style": { "navigationBarTitleText": "发布帖子" } }
+      ]
+    },
+    {
+      "root": "pages/subpkg-user",
+      "pages": [
+        { "path": "favorites", "style": { "navigationBarTitleText": "我的收藏" } },
+        { "path": "history", "style": { "navigationBarTitleText": "浏览记录" } },
+        { "path": "my-posts", "style": { "navigationBarTitleText": "我的发布" } },
+        { "path": "notifications", "style": { "navigationBarTitleText": "消息通知" } },
+        { "path": "feedback", "style": { "navigationBarTitleText": "意见反馈" } }
+      ]
+    }
+  ],
+  "tabBar": {
+    "color": "#999",
+    "selectedColor": "#07c160",
+    "borderStyle": "black",
+    "backgroundColor": "#ffffff",
+    "list": [
+      { "pagePath": "pages/tabbar/home/index", "text": "首页", "iconPath": "static/tab/home.png", "selectedIconPath": "static/tab/home-active.png" },
+      { "pagePath": "pages/tabbar/review/index", "text": "评测", "iconPath": "static/tab/review.png", "selectedIconPath": "static/tab/review-active.png" },
+      { "pagePath": "pages/tabbar/news/index", "text": "资讯", "iconPath": "static/tab/news.png", "selectedIconPath": "static/tab/news-active.png" },
+      { "pagePath": "pages/tabbar/community/index", "text": "社区", "iconPath": "static/tab/community.png", "selectedIconPath": "static/tab/community-active.png" },
+      { "pagePath": "pages/tabbar/profile/index", "text": "我的", "iconPath": "static/tab/profile.png", "selectedIconPath": "static/tab/profile-active.png" }
+    ]
+  },
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "副业邦",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#f5f5f5"
+  }
+}

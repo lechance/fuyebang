@@ -1,0 +1,1 @@
+<template><div><h2>骗局审核</h2><el-table :data="[]" stripe><el-table-column prop="title" label="标题" /><el-table-column prop="severity" label="严重程度" /><el-table-column prop="status" label="状态" /></el-table></div></template>

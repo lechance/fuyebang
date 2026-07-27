@@ -1,0 +1,1 @@
+<template><div><h2>副业库管理</h2><el-table :data="[]" stripe><el-table-column prop="name" label="名称" /><el-table-column prop="category" label="分类" /><el-table-column prop="totalReviews" label="评测数" /></el-table></div></template>

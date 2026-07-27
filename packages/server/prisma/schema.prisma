@@ -1,0 +1,705 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================
+// USER MODULE
+// ========================
+
+enum UserRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  BANNED
+  INACTIVE
+}
+
+model User {
+  id          String     @id @default(cuid())
+  openId      String?    @unique
+  unionId     String?
+  nickname    String?
+  avatarUrl   String?
+  phone       String?
+  role        UserRole   @default(USER)
+  status      UserStatus @default(ACTIVE)
+  lastLoginAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  posts           CommunityPost[]
+  comments        CommunityComment[]
+  likes           UserLike[]
+  favorites       UserFavorite[]
+  reviewReviews   Review[]            @relation("UserReviews")
+  reviewVotes     ReviewVote[]
+  scamReports     ScamReport[]
+  browseHistories BrowseHistory[]
+  notifications   Notification[]
+  feedbacks       Feedback[]
+  loginLogs       LoginLog[]
+
+  @@index([openId])
+  @@index([role])
+  @@map("users")
+}
+
+model LoginLog {
+  id        String   @id @default(cuid())
+  userId    String
+  ip        String?
+  device    String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("login_logs")
+}
+
+// ========================
+// BANNER MODULE
+// ========================
+
+enum BannerPosition {
+  HOME_TOP
+  HOME_MIDDLE
+  REVIEW_TOP
+}
+
+enum BannerTargetType {
+  REVIEW
+  ARTICLE
+  GUIDE
+  HUSTLE
+  URL
+  NONE
+}
+
+model Banner {
+  id         String           @id @default(cuid())
+  title      String
+  imageUrl   String
+  position   BannerPosition
+  targetType BannerTargetType
+  targetId   String?
+  targetUrl  String?
+  sortOrder  Int              @default(0)
+  isActive   Boolean          @default(true)
+  startAt    DateTime?
+  endAt      DateTime?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@index([position, isActive, sortOrder])
+  @@map("banners")
+}
+
+// ========================
+// CATEGORY & TAG SYSTEM
+// ========================
+
+enum CategorizableType {
+  REVIEW
+  ARTICLE
+  SIDE_HUSTLE
+  GUIDE
+}
+
+model Category {
+  id        String     @id @default(cuid())
+  name      String
+  slug      String     @unique
+  icon      String?
+  parentId  String?
+  sortOrder Int        @default(0)
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+
+  parent   Category?      @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[]     @relation("CategoryTree")
+  items    Categorization[]
+
+  @@index([parentId])
+  @@index([slug])
+  @@map("categories")
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  color     String?
+  createdAt DateTime @default(now())
+
+  items Taggable[]
+
+  @@map("tags")
+}
+
+model Categorization {
+  id         String             @id @default(cuid())
+  categoryId String
+  entityId   String
+  entityType CategorizableType
+
+  category   Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, entityId, entityType])
+  @@index([entityId, entityType])
+  @@map("categorizations")
+}
+
+model Taggable {
+  id         String             @id @default(cuid())
+  tagId      String
+  entityId   String
+  entityType CategorizableType
+
+  tag        Tag                @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([tagId, entityId, entityType])
+  @@index([entityId, entityType])
+  @@map("taggables")
+}
+
+// ========================
+// REVIEW MODULE (Core)
+// ========================
+
+enum ReviewStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+  PENDING_REVIEW
+}
+
+enum ReviewDifficulty {
+  EASY
+  MEDIUM
+  HARD
+  EXPERT
+}
+
+model Review {
+  id                   String           @id @default(cuid())
+  title                String
+  summary              String           @db.Text
+  content              String           @db.Text
+  coverImage           String?
+  slug                 String           @unique
+  scoreEarnings        Decimal          @db.Decimal(3, 1)
+  scoreRisk            Decimal          @db.Decimal(3, 1)
+  scoreMarketStability Decimal          @db.Decimal(3, 1)
+  scoreDifficulty      Decimal          @db.Decimal(3, 1)
+  scoreCompliance      Decimal          @db.Decimal(3, 1)
+  scoreOverall         Decimal          @db.Decimal(3, 1)
+  incomeMin            Decimal?         @db.Decimal(10, 2)
+  incomeMax            Decimal?         @db.Decimal(10, 2)
+  incomeCurrency       String           @default("CNY")
+  incomePeriod         String           @default("monthly")
+  difficulty           ReviewDifficulty @default(MEDIUM)
+  pros                 String[]
+  cons                 String[]
+  scamAlerts           String[]
+  requirements         String[]
+  timeCommitment       String?
+  startupCost          Decimal?         @db.Decimal(10, 2)
+  isFeatured           Boolean          @default(false)
+  viewCount            Int              @default(0)
+  favoriteCount        Int              @default(0)
+  reviewCount          Int              @default(0)
+  status               ReviewStatus     @default(DRAFT)
+  publishedAt          DateTime?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  authorId     String
+  author       User         @relation("UserReviews", fields: [authorId], references: [id])
+  sideHustleId String?
+  sideHustle   SideHustle?  @relation(fields: [sideHustleId], references: [id])
+  steps        ReviewStep[]
+  userReviews  UserReview[]
+  votes        ReviewVote[]
+  categories   Categorization[]
+  tags         Taggable[]
+
+  @@index([status, isFeatured])
+  @@index([scoreOverall])
+  @@index([publishedAt])
+  @@index([sideHustleId])
+  @@index([slug])
+  @@map("reviews")
+}
+
+model ReviewStep {
+  id         String   @id @default(cuid())
+  reviewId   String
+  stepNumber Int
+  title      String
+  content    String   @db.Text
+  imageUrl   String?
+  createdAt  DateTime @default(now())
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId, stepNumber])
+  @@map("review_steps")
+}
+
+model UserReview {
+  id         String   @id @default(cuid())
+  reviewId   String
+  userId     String
+  rating     Int
+  content    String   @db.Text
+  income     String?
+  isVerified Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, userId])
+  @@index([reviewId, createdAt])
+  @@map("user_reviews")
+}
+
+model ReviewVote {
+  id        String   @id @default(cuid())
+  reviewId  String
+  userId    String
+  vote      Boolean
+  createdAt DateTime @default(now())
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, userId])
+  @@map("review_votes")
+}
+
+// ========================
+// SIDE HUSTLE DATABASE
+// ========================
+
+enum HustleCategory {
+  SELF_MEDIA
+  E_COMMERCE
+  LOCAL_SERVICES
+  SKILL_BASED
+  RESOURCE_BASED
+  INVESTMENT
+  OTHER
+}
+
+model SideHustle {
+  id             String         @id @default(cuid())
+  name           String
+  slug           String         @unique
+  description    String         @db.Text
+  shortDesc      String
+  icon           String?
+  category       HustleCategory
+  avgScoreOverall Decimal?       @db.Decimal(3, 1)
+  totalReviews   Int            @default(0)
+  incomePotential String?
+  entryBarrier   String?
+  timeRequired   String?
+  isHot          Boolean        @default(false)
+  viewCount      Int            @default(0)
+  status         ReviewStatus   @default(PUBLISHED)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  reviews    Review[]
+  categories Categorization[]
+  tags       Taggable[]
+
+  @@index([category, status])
+  @@index([avgScoreOverall])
+  @@index([isHot, status])
+  @@map("side_hustles")
+}
+
+// ========================
+// ARTICLE / NEWS MODULE
+// ========================
+
+enum ArticleType {
+  POLICY_UPDATE
+  SEASONAL_ANALYSIS
+  MARKET_TREND
+  FAILURE_CASE
+  SUCCESS_STORY
+  TOOL_REVIEW
+  OTHER
+}
+
+model Article {
+  id         String      @id @default(cuid())
+  title      String
+  summary    String      @db.Text
+  content    String      @db.Text
+  coverImage String?
+  articleType ArticleType
+  authorName String
+  isFeatured Boolean     @default(false)
+  viewCount  Int         @default(0)
+  likeCount  Int         @default(0)
+  favoriteCount Int      @default(0)
+  status     ReviewStatus @default(DRAFT)
+  publishedAt DateTime?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  categories        Categorization[]
+  tags              Taggable[]
+  relatedHustleId   String?
+  relatedHustle     SideHustle? @relation(fields: [relatedHustleId], references: [id])
+
+  @@index([articleType, status, publishedAt])
+  @@index([isFeatured, status])
+  @@index([publishedAt])
+  @@map("articles")
+}
+
+// ========================
+// GUIDE MODULE
+// ========================
+
+enum GuideCategory {
+  BEGINNER
+  TOOL_RECOMMENDATION
+  FINANCIAL_PLANNING
+  COMPLIANCE
+  SKILL_IMPROVEMENT
+}
+
+model Guide {
+  id            String         @id @default(cuid())
+  title         String
+  summary       String         @db.Text
+  content       String         @db.Text
+  coverImage    String?
+  guideCategory GuideCategory
+  authorName    String
+  isFeatured    Boolean        @default(false)
+  viewCount     Int            @default(0)
+  status        ReviewStatus   @default(DRAFT)
+  publishedAt   DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  categories Categorization[]
+  tags       Taggable[]
+
+  @@index([guideCategory, status, publishedAt])
+  @@index([isFeatured, status])
+  @@map("guides")
+}
+
+model Tool {
+  id            String   @id @default(cuid())
+  name          String
+  description   String   @db.Text
+  logoUrl       String?
+  website       String?
+  category      String
+  isFree        Boolean  @default(true)
+  price         String?
+  rating        Decimal? @db.Decimal(2, 1)
+  isRecommended Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@map("tools")
+}
+
+// ========================
+// SCAM PREVENTION MODULE
+// ========================
+
+enum ScamStatus {
+  PENDING
+  VERIFIED
+  DISMISSED
+}
+
+enum ScamSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model ScamReport {
+  id             String       @id @default(cuid())
+  title          String
+  description    String       @db.Text
+  scamType       String
+  severity       ScamSeverity @default(MEDIUM)
+  targetPlatform String?
+  evidenceUrls   String[]
+  preventionTips String?      @db.Text
+  status         ScamStatus   @default(PENDING)
+  viewCount      Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  reporterId       String
+  reporter         User       @relation(fields: [reporterId], references: [id])
+  relatedHustleId  String?
+  relatedHustle    SideHustle? @relation(fields: [relatedHustleId], references: [id])
+
+  @@index([status, severity])
+  @@index([scamType])
+  @@index([createdAt])
+  @@map("scam_reports")
+}
+
+// ========================
+// COMMUNITY MODULE
+// ========================
+
+enum PostType {
+  EXPERIENCE_SHARING
+  QUESTION
+  DISCUSSION
+  RESOURCE_SHARING
+  WARNING
+}
+
+enum PostStatus {
+  PUBLISHED
+  HIDDEN
+  DELETED
+  REPORTED
+}
+
+model CommunityPost {
+  id            String     @id @default(cuid())
+  title         String
+  content       String     @db.Text
+  postType      PostType   @default(DISCUSSION)
+  images        String[]
+  tags          String[]
+  viewCount     Int        @default(0)
+  likeCount     Int        @default(0)
+  commentCount  Int        @default(0)
+  favoriteCount Int        @default(0)
+  isPinned      Boolean    @default(false)
+  status        PostStatus @default(PUBLISHED)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  authorId String
+  author   User              @relation(fields: [authorId], references: [id])
+  comments CommunityComment[]
+  likes    UserLike[]
+
+  @@index([status, createdAt])
+  @@index([postType, status])
+  @@index([authorId])
+  @@index([isPinned, status, createdAt])
+  @@map("community_posts")
+}
+
+model CommunityComment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  images    String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  postId   String
+  post     CommunityPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId String
+  author   User               @relation(fields: [authorId], references: [id])
+  parentId String?
+  parent   CommunityComment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies  CommunityComment[] @relation("CommentReplies")
+
+  @@index([postId, createdAt])
+  @@index([parentId])
+  @@map("community_comments")
+}
+
+model UserLike {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@map("user_likes")
+}
+
+// ========================
+// FAVORITES & HISTORY
+// ========================
+
+enum FavoriteType {
+  REVIEW
+  ARTICLE
+  GUIDE
+  HUSTLE
+  POST
+}
+
+model UserFavorite {
+  id         String       @id @default(cuid())
+  userId     String
+  entityId   String
+  entityType FavoriteType
+  createdAt  DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, entityId, entityType])
+  @@index([userId, entityType, createdAt])
+  @@map("user_favorites")
+}
+
+model BrowseHistory {
+  id         String   @id @default(cuid())
+  userId     String
+  entityId   String
+  entityType String
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, entityType, createdAt])
+  @@map("browse_histories")
+}
+
+// ========================
+// NOTIFICATION MODULE
+// ========================
+
+enum NotificationType {
+  SYSTEM
+  COMMENT_REPLY
+  POST_LIKE
+  POST_COMMENT
+  REVIEW_UPDATE
+  SCAM_ALERT
+  NEW_FEATURE
+}
+
+model Notification {
+  id         String           @id @default(cuid())
+  userId     String
+  type       NotificationType
+  title      String
+  body       String?          @db.Text
+  isRead     Boolean          @default(false)
+  entityType String?
+  entityId   String?
+  createdAt  DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt])
+  @@map("notifications")
+}
+
+// ========================
+// FEEDBACK MODULE
+// ========================
+
+enum FeedbackType {
+  BUG
+  FEATURE_REQUEST
+  CONTENT_SUGGESTION
+  OTHER
+}
+
+model Feedback {
+  id          String       @id @default(cuid())
+  userId      String
+  type        FeedbackType
+  title       String
+  content     String       @db.Text
+  images      String[]
+  contactInfo String?
+  isResolved  Boolean      @default(false)
+  adminReply  String?      @db.Text
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([type])
+  @@map("feedbacks")
+}
+
+// ========================
+// ADMIN & AUDIT
+// ========================
+
+model AdminUser {
+  id          String   @id @default(cuid())
+  username   String   @unique
+  password   String
+  nickname   String
+  avatarUrl  String?
+  role       UserRole @default(ADMIN)
+  isActive   Boolean  @default(true)
+  lastLoginAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("admin_users")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  adminId    String
+  action     String
+  entityType String
+  entityId   String?
+  details    Json?
+  createdAt  DateTime @default(now())
+
+  @@index([adminId, createdAt])
+  @@index([entityType, entityId])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}
+
+// ========================
+// ANALYTICS
+// ========================
+
+model DailyStat {
+  id                String   @id @default(cuid())
+  date              DateTime @unique
+  newUsers          Int      @default(0)
+  activeUsers       Int      @default(0)
+  totalViews        Int      @default(0)
+  reviewViews       Int      @default(0)
+  articleViews      Int      @default(0)
+  communityPosts    Int      @default(0)
+  communityComments Int      @default(0)
+  newReviews        Int      @default(0)
+  scamReports       Int      @default(0)
+  createdAt         DateTime @default(now())
+
+  @@map("daily_stats")
+}

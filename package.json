@@ -1,0 +1,25 @@
+{
+  "name": "fuyebang",
+  "version": "1.0.0",
+  "private": true,
+  "description": "副业资讯 & 创业评测小程序 Monorepo",
+  "scripts": {
+    "dev": "turbo dev",
+    "dev:server": "turbo dev --filter=@fuyebang/server",
+    "dev:client": "turbo dev --filter=@fuyebang/client",
+    "dev:admin": "turbo dev --filter=@fuyebang/admin",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "format": "prettier --write \"**/*.{ts,tsx,vue,json,md}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.2.0",
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "packageManager": "pnpm@9.0.0"
+}
