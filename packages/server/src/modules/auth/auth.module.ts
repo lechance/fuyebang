@@ -17,9 +17,9 @@ import wechatConfig from '../../config/wechat.config'
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('jwt.secret'),
+        secret: config.get<string>('JWT_SECRET') || 'fuyebang-jwt-secret-dev',
         signOptions: {
-          expiresIn: config.get<string>('jwt.expiresIn'),
+          expiresIn: config.get<string>('JWT_EXPIRES_IN') || '7d',
         },
       }),
     }),

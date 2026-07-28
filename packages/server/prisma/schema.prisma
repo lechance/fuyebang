@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+
 }
 
 datasource db {
@@ -40,13 +41,14 @@ model User {
   comments        CommunityComment[]
   likes           UserLike[]
   favorites       UserFavorite[]
-  reviewReviews   Review[]            @relation("UserReviews")
+  reviewReviews   Review[]           @relation("UserReviews")
   reviewVotes     ReviewVote[]
   scamReports     ScamReport[]
   browseHistories BrowseHistory[]
   notifications   Notification[]
   feedbacks       Feedback[]
   loginLogs       LoginLog[]
+  UserReview      UserReview[]
 
   @@index([openId])
   @@index([role])
@@ -60,7 +62,7 @@ model LoginLog {
   device    String?
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([createdAt])
@@ -117,17 +119,17 @@ enum CategorizableType {
 }
 
 model Category {
-  id        String     @id @default(cuid())
+  id        String   @id @default(cuid())
   name      String
-  slug      String     @unique
+  slug      String   @unique
   icon      String?
   parentId  String?
-  sortOrder Int        @default(0)
-  isActive  Boolean    @default(true)
-  createdAt DateTime   @default(now())
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
 
-  parent   Category?      @relation("CategoryTree", fields: [parentId], references: [id])
-  children Category[]     @relation("CategoryTree")
+  parent   Category?        @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[]       @relation("CategoryTree")
   items    Categorization[]
 
   @@index([parentId])
@@ -148,12 +150,20 @@ model Tag {
 }
 
 model Categorization {
-  id         String             @id @default(cuid())
+  id         String            @id @default(cuid())
   categoryId String
   entityId   String
   entityType CategorizableType
 
-  category   Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  category     Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  Review       Review?     @relation(fields: [reviewId], references: [id])
+  reviewId     String?
+  SideHustle   SideHustle? @relation(fields: [sideHustleId], references: [id])
+  sideHustleId String?
+  Article      Article?    @relation(fields: [articleId], references: [id])
+  articleId    String?
+  Guide        Guide?      @relation(fields: [guideId], references: [id])
+  guideId      String?
 
   @@unique([categoryId, entityId, entityType])
   @@index([entityId, entityType])
@@ -161,12 +171,20 @@ model Categorization {
 }
 
 model Taggable {
-  id         String             @id @default(cuid())
+  id         String            @id @default(cuid())
   tagId      String
   entityId   String
   entityType CategorizableType
 
-  tag        Tag                @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tag          Tag         @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  Review       Review?     @relation(fields: [reviewId], references: [id])
+  reviewId     String?
+  SideHustle   SideHustle? @relation(fields: [sideHustleId], references: [id])
+  sideHustleId String?
+  Article      Article?    @relation(fields: [articleId], references: [id])
+  articleId    String?
+  Guide        Guide?      @relation(fields: [guideId], references: [id])
+  guideId      String?
 
   @@unique([tagId, entityId, entityType])
   @@index([entityId, entityType])
@@ -225,9 +243,9 @@ model Review {
   updatedAt            DateTime         @updatedAt
 
   authorId     String
-  author       User         @relation("UserReviews", fields: [authorId], references: [id])
+  author       User             @relation("UserReviews", fields: [authorId], references: [id])
   sideHustleId String?
-  sideHustle   SideHustle?  @relation(fields: [sideHustleId], references: [id])
+  sideHustle   SideHustle?      @relation(fields: [sideHustleId], references: [id])
   steps        ReviewStep[]
   userReviews  UserReview[]
   votes        ReviewVote[]
@@ -305,27 +323,29 @@ enum HustleCategory {
 }
 
 model SideHustle {
-  id             String         @id @default(cuid())
-  name           String
-  slug           String         @unique
-  description    String         @db.Text
-  shortDesc      String
-  icon           String?
-  category       HustleCategory
+  id              String         @id @default(cuid())
+  name            String
+  slug            String         @unique
+  description     String         @db.Text
+  shortDesc       String
+  icon            String?
+  category        HustleCategory
   avgScoreOverall Decimal?       @db.Decimal(3, 1)
-  totalReviews   Int            @default(0)
+  totalReviews    Int            @default(0)
   incomePotential String?
-  entryBarrier   String?
-  timeRequired   String?
-  isHot          Boolean        @default(false)
-  viewCount      Int            @default(0)
-  status         ReviewStatus   @default(PUBLISHED)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  entryBarrier    String?
+  timeRequired    String?
+  isHot           Boolean        @default(false)
+  viewCount       Int            @default(0)
+  status          ReviewStatus   @default(PUBLISHED)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   reviews    Review[]
   categories Categorization[]
   tags       Taggable[]
+  Article    Article[]
+  ScamReport ScamReport[]
 
   @@index([category, status])
   @@index([avgScoreOverall])
@@ -348,26 +368,26 @@ enum ArticleType {
 }
 
 model Article {
-  id         String      @id @default(cuid())
-  title      String
-  summary    String      @db.Text
-  content    String      @db.Text
-  coverImage String?
-  articleType ArticleType
-  authorName String
-  isFeatured Boolean     @default(false)
-  viewCount  Int         @default(0)
-  likeCount  Int         @default(0)
-  favoriteCount Int      @default(0)
-  status     ReviewStatus @default(DRAFT)
-  publishedAt DateTime?
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id            String       @id @default(cuid())
+  title         String
+  summary       String       @db.Text
+  content       String       @db.Text
+  coverImage    String?
+  articleType   ArticleType
+  authorName    String
+  isFeatured    Boolean      @default(false)
+  viewCount     Int          @default(0)
+  likeCount     Int          @default(0)
+  favoriteCount Int          @default(0)
+  status        ReviewStatus @default(DRAFT)
+  publishedAt   DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
-  categories        Categorization[]
-  tags              Taggable[]
-  relatedHustleId   String?
-  relatedHustle     SideHustle? @relation(fields: [relatedHustleId], references: [id])
+  categories      Categorization[]
+  tags            Taggable[]
+  relatedHustleId String?
+  relatedHustle   SideHustle?      @relation(fields: [relatedHustleId], references: [id])
 
   @@index([articleType, status, publishedAt])
   @@index([isFeatured, status])
@@ -388,19 +408,19 @@ enum GuideCategory {
 }
 
 model Guide {
-  id            String         @id @default(cuid())
+  id            String        @id @default(cuid())
   title         String
-  summary       String         @db.Text
-  content       String         @db.Text
+  summary       String        @db.Text
+  content       String        @db.Text
   coverImage    String?
   guideCategory GuideCategory
   authorName    String
-  isFeatured    Boolean        @default(false)
-  viewCount     Int            @default(0)
-  status        ReviewStatus   @default(DRAFT)
+  isFeatured    Boolean       @default(false)
+  viewCount     Int           @default(0)
+  status        ReviewStatus  @default(DRAFT)
   publishedAt   DateTime?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   categories Categorization[]
   tags       Taggable[]
@@ -457,10 +477,10 @@ model ScamReport {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  reporterId       String
-  reporter         User       @relation(fields: [reporterId], references: [id])
-  relatedHustleId  String?
-  relatedHustle    SideHustle? @relation(fields: [relatedHustleId], references: [id])
+  reporterId      String
+  reporter        User        @relation(fields: [reporterId], references: [id])
+  relatedHustleId String?
+  relatedHustle   SideHustle? @relation(fields: [relatedHustleId], references: [id])
 
   @@index([status, severity])
   @@index([scamType])
@@ -504,7 +524,7 @@ model CommunityPost {
   updatedAt     DateTime   @updatedAt
 
   authorId String
-  author   User              @relation(fields: [authorId], references: [id])
+  author   User               @relation(fields: [authorId], references: [id])
   comments CommunityComment[]
   likes    UserLike[]
 
@@ -541,7 +561,7 @@ model UserLike {
   postId    String
   createdAt DateTime @default(now())
 
-  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   post CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@unique([userId, postId])
@@ -654,16 +674,16 @@ model Feedback {
 // ========================
 
 model AdminUser {
-  id          String   @id @default(cuid())
-  username   String   @unique
-  password   String
-  nickname   String
-  avatarUrl  String?
-  role       UserRole @default(ADMIN)
-  isActive   Boolean  @default(true)
+  id          String    @id @default(cuid())
+  username    String    @unique
+  password    String
+  nickname    String
+  avatarUrl   String?
+  role        UserRole  @default(ADMIN)
+  isActive    Boolean   @default(true)
   lastLoginAt DateTime?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@map("admin_users")
 }

@@ -1,6 +1,6 @@
 import { IsOptional, IsString, IsEnum, Min, Max } from 'class-validator'
 import { PaginationDto } from '../../../common/dto/pagination.dto'
-import { ReviewDifficulty, SortOrder } from '@prisma/client'
+import { ReviewDifficulty } from '@prisma/client'
 
 export class QueryReviewDto extends PaginationDto {
   @IsOptional()
@@ -20,8 +20,8 @@ export class QueryReviewDto extends PaginationDto {
   sortBy?: 'overall' | 'earnings' | 'newest' | 'views' | 'difficulty'
 
   @IsOptional()
-  @IsEnum(SortOrder)
-  sortOrder?: SortOrder
+  @IsString()
+  sortOrder?: string
 
   @IsOptional()
   @Min(0) @Max(10)

@@ -4,8 +4,26 @@ import { QueryReviewDto } from './dto/query-review.dto'
 import { CreateReviewDto } from './dto/create-review.dto'
 import { UpdateReviewDto } from './dto/update-review.dto'
 import { paginate } from '../../common/dto/pagination.dto'
-import { calculateOverall } from '@fuyebang/shared'
 import { Prisma } from '@prisma/client'
+
+// 5 维度评分权重
+const SCORE_WEIGHTS = {
+  earnings: 0.25,
+  risk: 0.20,
+  marketStability: 0.20,
+  difficulty: 0.15,
+  compliance: 0.20,
+}
+
+function calculateOverall(scores: { scoreEarnings: number; scoreRisk: number; scoreMarketStability: number; scoreDifficulty: number; scoreCompliance: number }): number {
+  const raw =
+    scores.scoreEarnings * SCORE_WEIGHTS.earnings +
+    (10 - scores.scoreRisk) * SCORE_WEIGHTS.risk +
+    scores.scoreMarketStability * SCORE_WEIGHTS.marketStability +
+    (10 - scores.scoreDifficulty) * SCORE_WEIGHTS.difficulty +
+    scores.scoreCompliance * SCORE_WEIGHTS.compliance
+  return Math.round(raw * 10) / 10
+}
 
 @Injectable()
 export class ReviewsService {
@@ -28,11 +46,11 @@ export class ReviewsService {
 
     const orderBy: Prisma.ReviewOrderByWithRelationInput = {}
     switch (query.sortBy) {
-      case 'earnings': orderBy.scoreEarnings = query.sortOrder || 'desc'; break
-      case 'newest': orderBy.publishedAt = 'desc'; break
-      case 'views': orderBy.viewCount = 'desc'; break
-      case 'difficulty': orderBy.scoreDifficulty = query.sortOrder || 'asc'; break
-      default: orderBy.scoreOverall = 'desc'
+      case 'earnings': orderBy.scoreEarnings = (query.sortOrder as Prisma.SortOrder) || Prisma.SortOrder.desc; break
+      case 'newest': orderBy.publishedAt = Prisma.SortOrder.desc; break
+      case 'views': orderBy.viewCount = Prisma.SortOrder.desc; break
+      case 'difficulty': orderBy.scoreDifficulty = (query.sortOrder as Prisma.SortOrder) || Prisma.SortOrder.asc; break
+      default: orderBy.scoreOverall = Prisma.SortOrder.desc
     }
 
     const [data, total] = await Promise.all([
@@ -97,7 +115,7 @@ export class ReviewsService {
       stability: 'scoreMarketStability', difficulty: 'scoreDifficulty', compliance: 'scoreCompliance',
     }
     const field = dimensionMap[dimension] || 'scoreOverall'
-    orderBy[field] = 'desc'
+    ;(orderBy as any)[field] = 'desc'
 
     return this.prisma.review.findMany({
       where: { status: 'PUBLISHED' },

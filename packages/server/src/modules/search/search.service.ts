@@ -156,9 +156,9 @@ export class SearchService {
     ])
 
     const result = [
-      ...reviews.map(r => ({ text: r.title, type: 'review' as const, slug: r.slug })),
-      ...hustles.map(h => ({ text: h.name, type: 'hustle' as const, slug: h.slug })),
-      ...articles.map(a => ({ text: a.title, type: 'article' as const, id: a.id })),
+      ...reviews.map((r: any) => ({ text: r.title, type: 'review' as const, slug: r.slug })),
+      ...hustles.map((h: any) => ({ text: h.name, type: 'hustle' as const, slug: h.slug })),
+      ...articles.map((a: any) => ({ text: a.title, type: 'article' as const, id: a.id })),
     ]
 
     await this.redis.set(cacheKey, result, 60)

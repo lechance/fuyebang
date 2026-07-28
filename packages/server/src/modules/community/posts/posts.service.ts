@@ -9,6 +9,7 @@ export class PostsService {
     const where: any = { status: 'PUBLISHED' }
     if (query.type) where.postType = query.type
     if (query.tag) where.tags = { has: query.tag }
+    if (query.authorId) where.authorId = query.authorId
     const page = query.page || 1
     const ps = query.pageSize || 20
     const orderBy: any = query.sortBy === 'hot' ? { likeCount: 'desc' } : { createdAt: 'desc' }

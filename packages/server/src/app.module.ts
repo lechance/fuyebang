@@ -20,6 +20,7 @@ import { UploadModule } from './modules/upload/upload.module'
 import { FavoritesModule } from './modules/favorites/favorites.module'
 import { HistoryModule } from './modules/history/history.module'
 import { AnalyticsModule } from './modules/analytics/analytics.module'
+import { FeedbackModule } from './modules/feedback/feedback.module'
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module'
     FavoritesModule,
     HistoryModule,
     AnalyticsModule,
+    FeedbackModule,
   ],
 })
 export class AppModule {}

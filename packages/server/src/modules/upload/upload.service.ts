@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common'
+import 'multer'
 
 @Injectable()
 export class UploadService {

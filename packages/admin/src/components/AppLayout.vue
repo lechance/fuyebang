@@ -9,12 +9,13 @@ const menuItems = [
   { path: '/dashboard', label: '数据看板', icon: 'Odometer' },
   { path: '/reviews', label: '评测管理', icon: 'Document' },
   { path: '/articles', label: '资讯管理', icon: 'Notebook' },
-  { path: '/hustles', label: '副业库管理', icon: 'List' },
+  { path: '/guides', label: '指南管理', icon: 'Reading' },
+  { path: '/hustles', label: '副业库', icon: 'List' },
   { path: '/scams', label: '骗局审核', icon: 'Warning' },
   { path: '/community', label: '社区管理', icon: 'ChatDotSquare' },
   { path: '/banners', label: '横幅管理', icon: 'Picture' },
   { path: '/users', label: '用户管理', icon: 'User' },
-  { path: '/categories', label: '分类设置', icon: 'Setting' },
+  { path: '/categories', label: '系统设置', icon: 'Setting' },
 ]
 
 function logout() {
@@ -38,6 +39,10 @@ function logout() {
         <el-menu-item index="/articles">
           <el-icon><Notebook /></el-icon>
           <template #title>资讯管理</template>
+        </el-menu-item>
+        <el-menu-item index="/guides">
+          <el-icon><Reading /></el-icon>
+          <template #title>指南管理</template>
         </el-menu-item>
         <el-menu-item index="/hustles">
           <el-icon><List /></el-icon>
@@ -66,7 +71,10 @@ function logout() {
       </el-menu>
     </el-aside>
     <el-container>
-      <el-header style="display: flex; align-items: center; justify-content: flex-end; padding: 0 20px">
+      <el-header style="display: flex; align-items: center; justify-content: space-between; padding: 0 20px">
+        <el-button @click="collapsed = !collapsed" type="text">
+          {{ collapsed ? '⟩⟩' : '⟨⟨' }}
+        </el-button>
         <el-button @click="logout" type="text">退出登录</el-button>
       </el-header>
       <el-main>
